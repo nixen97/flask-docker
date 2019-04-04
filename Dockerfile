@@ -11,7 +11,8 @@ RUN apk add --no-cache postgresql-libs libxslt-dev
 
 RUN pip install --upgrade pip
 
-RUN pip install --no-cache-dir flask gunicorn lxml pycrypto psycopg2 requests python-dateutil redis
+# pip
+RUN pip install --no-cache-dir flask gunicorn dash dash_core_components dash_html_components plotly sklearn
 
 RUN apk --purge del .build-deps
 
@@ -19,4 +20,4 @@ COPY ./server /usr/src
 
 RUN python -c 'import RSA; RSA.BuildKey()'
 
-CMD ["gunicorn", "-w 4", "-b 0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "-w 4", "-b 0.0.0.0:5000", "app:dashb"]
