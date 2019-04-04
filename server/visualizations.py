@@ -6,6 +6,7 @@ import plotly.io as pio
 import plotly.figure_factory as ff
 from plotly.offline import plot_mpl
 from plotly import tools
+import matplotlib.pyplot as plt
 
 # sklearn libraries
 from sklearn.preprocessing import label_binarize
@@ -21,6 +22,9 @@ import os
 from shutil import copyfile
 from itertools import cycle
 from scipy import interp
+import json
+import pandas as pd
+from collections import Counter
 
 
 import warnings
@@ -235,8 +239,7 @@ def plot_training_performances(models, accuracies, losses, epochs=[15,15,15,15])
         assert len(losses[epoch]) == epochs[epoch]
         x_data.append([i+1 for i in range(epochs[epoch])])
 
-    fig = tools.make_subplots(rows=1, cols=2, subplot_titles=('Accuracies', 'Losses'))
-
+    fig = tools.make_subplots(rows=1, cols=2)
     colors = ['#173f5f', '#20639b', '#3caea3', '#f6d55c', '#ed553b']
     for i in range(0, len(models)):
         fig.append_trace(go.Scatter(
@@ -301,7 +304,7 @@ def plot_training_performances(models, accuracies, losses, epochs=[15,15,15,15])
                                                 size=16),
                                     showarrow=False))
     # adding title
-    annotations.append(dict(xref='paper', yref='paper', x=0.5, y=1.05,
+    annotations.append(dict(xref='paper', yref='paper', x=0.25, y=1.05,
                                 xanchor='left', yanchor='bottom',
                                 text='Accuracy and Losses',
                                 font=dict(family='Arial',
@@ -310,9 +313,9 @@ def plot_training_performances(models, accuracies, losses, epochs=[15,15,15,15])
                                 showarrow=False))
 
 
-    fig['layout'].update(title='Accuracies and Losses')
-    fig['layout']['xaxis1'].update(title='Epoch')
-    fig['layout']['xaxis2'].update(title='Epoch')
+    #fig['layout'].update(title='Accuracies and Losses')
+    fig['layout']['xaxis1'].update(title='Epoch', domain=[0.0, 0.23])
+    fig['layout']['xaxis2'].update(title='Epoch', domain=[0.27, 0.5])
 
     fig['layout']['yaxis1'].update(title='Accuracy')
     fig['layout']['yaxis2'].update(title='Loss')
@@ -327,7 +330,7 @@ def performance_table(accuracies, precisions, recalls, f1_scores, list_of_models
     header = [['Model', 'Accuracy', 'Precision', 'Recall','F1-score']]
 
     baselines = [['Bernoulli <br>Baseline', 0.50, 0.50, 0.50, 0.50],
-                ['Human <br>Baseline', 0.50, 0.50, 0.50, 0.50]]
+                ['Human <br>Baseline', 0.89, 0.89, 0.89, 0.89]]
 
     table_data = []
     for i in range(len(list_of_models)):
@@ -648,70 +651,55 @@ def auc_table(auc):
     return figure
     #plotly.offline.plot(figure, filename='viz/comparison_table.html', auto_open=False)
 
+def zipf_law(filename):
+    with open(filename) as words:
+        for line in words:
+            data = json.loads(line)
+
+    top_k = len(data)
+    
+    sorted_data = sorted(data.items(), key=lambda kv: kv[1])[-top_k:]
+
+    x, y, rank = [], [], []
+    for i in range(len(sorted_data)):
+        x.append(sorted_data[i][0])
+        y.append(np.log(sorted_data[i][1]))
+        rank.append(np.log(top_k-i))
+
+    # Create a trace
+    trace = go.Scatter(
+        x = rank,
+        y = y,
+        text = x
+    )
+
+    data = [trace]
+    figure = go.Figure(data=data)
+    figure.layout.update({'title': 'Zipf Law'})
+    figure['layout']['xaxis1'].update(title='Rank')
+    figure['layout']['yaxis1'].update(title='Frequency')
+    #plotly.offline.plot(figure, filename='viz/zipf_law.html', auto_open=True)
+    return figure
+
+def length_distribution(filename):
+    df = pd.read_csv(filename)
+    
+    sentences = [len(str(item).split()) for item in df['reviewText'].values if len(str(item).split())<2001]
+    #counter = Counter(sentences)
+    data = [go.Histogram(x=sentences,
+                    histnorm='probability')]
+    
+
+    figure = go.Figure(data=data)
+    figure.layout.update({'title': 'Sentence length distribution'})
+    figure['layout']['xaxis1'].update(title='Length')
+    figure['layout']['yaxis1'].update(title='Probability')
+    figure['layout'].update({'bargap': 0.2})
+    #plotly.offline.plot(figure, filename='viz/sent_length_freq.html', auto_open=True)
+    return figure
+
     
 if __name__ == "__main__":
-
-    """
-    TEST FOR EMBEDDINGS
-    """
-    text = ["Word1", "Word2", "Word3", "Word4"]
-    #viz_embeddings(np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1]]), text, 3)
-
-    """
-    TEST FOR CONFUSION MATRICES
-    """
-    NUM_OF_MODELS = 6
-    list_of_models = ["SVM", "Logistic Reg.", "Naive Bayes", "FFNN", "CNN", "RNN"]
-    true_labels = ["pos", "neg", "neg", "pos", "neg"]
-    models_predictions = [[] for _ in range(NUM_OF_MODELS)]
-    
-    models_predictions[0] = [[0.3, 0.7], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]]
-    models_predictions[1] = [[0.3, 0.7], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]]
-    models_predictions[2] = [[0.3, 0.7], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]]
-    models_predictions[3] = [[0.3, 0.7], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]]
-    models_predictions[4] = [[0.3, 0.7], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]]
-    models_predictions[5] = [[0.3, 0.7], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]]
-
-    models_predictions = pred_to_labels(models_predictions)
-    #conf_matrices = construct_conf_matrices(true_labels, models_predictions, list_of_models)
-
-    """
-    TEST FOR TRAINING PERFORMANCES
-    """
-    models = ['Log. Regr.', 'FFNN', 'CNN', 'RNN']
-    acc = [
-        [74, 82, 80, 74, 73, 72, 74, 70, 70, 66, 66, 69],
-        [45, 42, 50, 46, 36, 36, 34, 35, 32, 31, 31, 28],
-        [13, 14, 20, 24, 20, 24, 24, 40, 35, 41, 43, 50],
-        [18, 21, 18, 21, 16, 14, 13, 18, 17, 16, 19, 23],
-    ]
-
-    loss = [
-        [74, 82, 80, 74, 73, 72, 74, 70, 70, 66, 66, 69],
-        [45, 42, 50, 46, 36, 36, 34, 35, 32, 31, 31, 28],
-        [13, 14, 20, 24, 20, 24, 24, 40, 35, 41, 43, 50],
-        [18, 21, 18, 21, 16, 14, 13, 18, 17, 16, 19, 23],
-    ]
-
-    #plot_training_performances(models, acc, loss, batches=[12, 12, 12, 12])
-    
-    """
-    TEST FOR TABLE OF PERFORMANCE COMPARISON
-    """
-    #performance_table(input)
-
-    """
-    TEST FOR ROC CURVES
-    """
-
-    y_scores = [[] for _ in range(NUM_OF_MODELS)]
-    y_scores[0] = np.array([[0.3, 0.7], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]])
-    y_scores[1] = np.array([[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
-    y_scores[2] = np.array([[0.4, 0.6], [0.4, 0.6], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]])
-    y_scores[3] = np.array([[0.3, 0.7], [0.2, 0.8], [0.1, 0.9], [0.8, 0.2], [0.7, 0.3]])
-    y_scores[4] = np.array([[0.3, 0.7], [0.4, 0.6], [0.5, 0.5], [0.8, 0.2], [0.7, 0.3]])
-    y_scores[5] = np.array([[0.3, 0.7], [0.4, 0.6], [0.6, 0.4], [0.8, 0.2], [0.7, 0.3]])
-    y_test = np.array([[0, 1], [1, 0], [0, 1], [1, 0], [1, 0]])
-
-    #compute_roc(list_of_models, y_scores, y_test)
-
+    #zipf_law("data/word_freq.json")
+    #length_distribution("data/phase1_movie_reviews-train.csv")
+    pass

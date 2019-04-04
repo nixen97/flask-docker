@@ -9,12 +9,12 @@ from visualizations import viz_embeddings, pred_to_labels
 from visualizations import plot_roc_curves, compute_roc, auc_table
 from visualizations import compute_avg_of_list, compute_avg_accuracy
 from visualizations import compute_avg_conf_matrix, compute_avg_roc_curves
+from visualizations import length_distribution, zipf_law
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 from flask import Flask
-# from flask_cors import CORS
+from flask_cors import CORS
 import numpy as np
 import json
-import os
 
 def launch_dashboard(app):
     app.run_server(debug=True)
@@ -29,10 +29,7 @@ def prepare_dashboard(  neural_models_list=['Default1'],
                         recall_scores=[0],
                         f1_scores=[0],
                         confusion_matrices=[np.array([1,1]), np.array([2,1])],
-                        auc=[[0,0],[0,0]],
-                        words=["Word1"],
-                        embeddings=np.array([0,0,0]),
-                        dimensions=3):
+                        auc=[[0,0],[0,0]]):
 
                         
     """ this is the function to call from main.py to create the dashboard.
@@ -65,13 +62,7 @@ def prepare_dashboard(  neural_models_list=['Default1'],
         confusion_matrices (list of arrays): confusion matrices for each model
 
         auc (list of lists): auc for each model (for class pos and class neg)
-        
-        words (list): list of words.
-                    Needed for embeddings plotting.
-        embeddings (np.array): embedding vector for each word in words.
-                                Needed for embeddings plotting.
-        dimensions (int): Integer. Either two or three. Dimension to visualize the embeddings.
-                            Needed for embeddings plotting.
+    
     """
 
 
@@ -114,7 +105,6 @@ def prepare_dashboard(  neural_models_list=['Default1'],
 
                 
     return layout
-    #launch_dashboard(app)
 
 
 def get_data(filename):
@@ -157,13 +147,6 @@ def get_data(filename):
 
     epochs = [len(acc) for acc in accuracies]
 
-    """
-    TEST FOR EMBEDDINGS
-    """
-    words = ["Word1", "Word2", "Word3", "Word4"]
-    embeddings = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1]])
-    dimensions = 3
-
     return prepare_dashboard(neural_models_list=neural_models_list, 
                         accuracies=accuracies, 
                         losses=losses, 
@@ -174,24 +157,16 @@ def get_data(filename):
                         recall_scores=recall_scores,
                         f1_scores=f1_scores,
                         confusion_matrices=conf_matrices,
-                        auc=auc,
-                        words=words,
-                        embeddings=embeddings,
-                        dimensions=dimensions)
+                        auc=auc)
 
-def get_embed(filename):
-    """
-    TEST FOR EMBEDDINGS
-    """
+def get_embed():
+
     embeddings = np.load("data/embed_mat.npy")
-
+    embeddings = embeddings[:-1]
     with open("data/int2word.json") as infile:
         for line in infile:
             int2word = json.loads(line)
-
-    embeddings = embeddings[:-1]
-    #print(len(embeddings))
-    #print(len(int2word.keys()))
+    
     words = []
     for i in range(len(embeddings)):
         try:
@@ -199,28 +174,49 @@ def get_embed(filename):
         except:
             print("Word is not known.")
 
-
-
-    #words = ["Word1", "Word2", "Word3", "Word4"]
-    #embeddings = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1]])
     dimensions = 3
 
     layout = html.Div(
                     children=[html.Div(
                     children=
-                     html.Div(
-                        children=html.Div([
-                            dcc.Graph(
-                                id='viz-graph',
-                                figure=viz_embeddings(embeddings, words, dimensions),
-                                style={'width': '100%', 'height':'800px', 'display': 'inline-block'}
+                        html.Div(
+                            children=html.Div([
+                                dcc.Graph(
+                                    id='viz-graph',
+                                    figure=viz_embeddings(embeddings, words, dimensions),
+                                    style={'width': '100%', 'height':'800px', 'display': 'inline-block'}
+                                )
+                            ], style={'display': 'inline-block', 'border-width': '0px 0px 0px 0px', 'width':'100%', 'height':'900px', 'margin-top':'10px', 'margin-bottom': '10px'},
                             )
-                        ], style={'display': 'inline-block', 'border-width': '0px 0px 0px 0px', 'width':'100%', 'height':'900px', 'margin-top':'10px', 'margin-bottom': '10px'},
-                    ))
-                    )
-                    ]
-                )
+                        )
+                    )]
+            )
                 
+    return layout
+
+def get_eda(word_freq, dataset):
+    layout = html.Div(
+                children=[html.Div(
+                    children=html.Div([
+                        dcc.Graph(
+                            id='left-top-graph',
+                            figure=zipf_law(word_freq),
+                            style={'width': '100%', 'height':'500px', 'display': 'inline-block'}
+                        )
+                    ], style={'display': 'inline-block', 'border-width': '0px 0px 0px 0px', 'width':'100%', 'height':'500px'},
+                )),
+                html.Div(
+                    children=html.Div([
+                        dcc.Graph(
+                            id='middle-graph',
+                            figure=length_distribution(dataset),
+                            style={'width': '100%', 'height':'850px', 'display': 'inline-block'}
+                        )
+                    ], style={'display': 'inline-block', 'border-width': '0px 0px 0px 0px', 'width':'100%', 'height':'850px', 'margin-top':'10px', 'margin-bottom': '10px'},
+                ))
+                ]
+            )
+    
     return layout
 
 #TO FINISH BEFORE FRIDAY
@@ -254,26 +250,28 @@ def get_test_performance(filename):
     
     return layout
 
+
 app = dash.Dash(__name__)
 server = app.server
-server.secret_key = os.environ.get('SECRET_KEY', 'jfdksgndfjkgdsiugegrhuh239u2ygioajg298jwim')
-# CORS(server)
+CORS(server)
 
-layout_e3 = get_data("data/vis_results_e_3.txt")
-layout_e4 = get_data("data/vis_results_e_4.txt")
-layout_e5 = get_data("data/vis_results_e_5.txt")
-layout_e6 = get_data("data/vis_results_e_6.txt")
-layout_wordembedd = get_embed("data/vis_results_e_6.txt")
+layout_eda = get_eda("data/word_freq.json", "data/phase1_movie_reviews-train.csv")
+layout_e10 = get_data("data/viz_results_e_10.txt")
+layout_e15 = get_data("data/viz_results_e_10.txt")
+layout_e20 = get_data("data/viz_results_e_10.txt")
+#layout_e6 = get_data("data/vis_results_e_6.txt")
+layout_wordembedd = get_embed()
 #layout_test = get_test_performance("data/vis_results_e_6.txt")
 
 
 app.layout = html.Div([
     html.H1("Second Year Project - Phase 1 results"),
-    dcc.Tabs(id='sent_tabs', value='e3_tab', children=[
-        dcc.Tab(label='3 Epochs', value='e3_tab'),
-        dcc.Tab(label='4 Epochs', value='e4_tab'),
-        dcc.Tab(label='5 Epochs', value='e5_tab'),
-        dcc.Tab(label='6 Epochs', value='e6_tab'),
+    dcc.Tabs(id='sent_tabs', value='eda', children=[
+        dcc.Tab(label='EDA', value='eda'),
+        dcc.Tab(label='10 Epochs', value='e10_tab'),
+        dcc.Tab(label='15 Epochs', value='e15_tab'),
+        dcc.Tab(label='20 Epochs', value='e20_tab'),
+        #dcc.Tab(label='6 Epochs', value='e6_tab'),
         dcc.Tab(label='Word Embeddings', value='word_embedding')#,
         #dcc.Tab(label='Performance on Test', value='perf_on_test')
     ]),
@@ -285,21 +283,20 @@ app.layout = html.Div([
             [Input('sent_tabs', 'value')])
 def render_content(tab):
 
-    if tab == 'e3_tab':
-        return layout_e3
-    elif tab == 'e4_tab':
-        return layout_e4
-    elif tab == 'e5_tab':
-        return layout_e5
-    elif tab == 'e6_tab':
-        return layout_e6
+    if tab == 'e10_tab':
+        return layout_e10
+    elif tab == 'e15_tab':
+        return layout_e15
+    elif tab == 'e20_tab':
+        return layout_e20
     elif tab == 'word_embedding':
         return layout_wordembedd
+    elif tab == 'eda':
+        return layout_eda
     """
     elif tab == 'perf_on_test':
         return layout_test
     """
-
 
 if __name__ == '__main__':
 
