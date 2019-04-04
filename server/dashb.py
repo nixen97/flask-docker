@@ -11,9 +11,10 @@ from visualizations import compute_avg_of_list, compute_avg_accuracy
 from visualizations import compute_avg_conf_matrix, compute_avg_roc_curves
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 from flask import Flask
-from flask_cors import CORS
+# from flask_cors import CORS
 import numpy as np
 import json
+import os
 
 def launch_dashboard(app):
     app.run_server(debug=True)
@@ -253,10 +254,10 @@ def get_test_performance(filename):
     
     return layout
 
-
 app = dash.Dash(__name__)
 server = app.server
-CORS(server)
+server.secret_key = os.environ.get('SECRET_KEY', 'jfdksgndfjkgdsiugegrhuh239u2ygioajg298jwim')
+# CORS(server)
 
 layout_e3 = get_data("data/vis_results_e_3.txt")
 layout_e4 = get_data("data/vis_results_e_4.txt")

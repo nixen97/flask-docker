@@ -6,7 +6,6 @@ import plotly.io as pio
 import plotly.figure_factory as ff
 from plotly.offline import plot_mpl
 from plotly import tools
-import matplotlib.pyplot as plt
 
 # sklearn libraries
 from sklearn.preprocessing import label_binarize
