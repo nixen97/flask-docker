@@ -3,6 +3,8 @@ FROM python:3.6.8
 
 WORKDIR /usr/src
 
+RUN ldconfig
+
 RUN apt update
 RUN apt install -y libc-dev gcc libatlas-dev libatlas3-base
 
