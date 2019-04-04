@@ -12,7 +12,7 @@ from visualizations import compute_avg_conf_matrix, compute_avg_roc_curves
 from visualizations import length_distribution, zipf_law
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 from flask import Flask
-from flask_cors import CORS
+# from flask_cors import CORS
 import numpy as np
 import json
 
@@ -253,7 +253,7 @@ def get_test_performance(filename):
 
 app = dash.Dash(__name__)
 server = app.server
-CORS(server)
+# CORS(server)
 
 layout_eda = get_eda("data/word_freq.json", "data/phase1_movie_reviews-train.csv")
 layout_e10 = get_data("data/viz_results_e_10.txt")
