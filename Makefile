@@ -1,13 +1,13 @@
 MAKEFLAGS += --silent
 
 deploy: build
-	docker-compose -d
+	docker-compose up -d
 
 run: build
 	docker-compose up
 
 build: clean
-	docker build -t flask-app .
+	docker build -t flask-app:latest .
 
 clean:
 	docker-compose rm -f
