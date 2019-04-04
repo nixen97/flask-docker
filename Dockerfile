@@ -11,6 +11,7 @@ RUN pip install --upgrade pip
 # pip
 RUN pip install --no-cache-dir sklearn
 RUN pip install --no-cache-dir flask gunicorn dash dash_core_components dash_html_components plotly
+RUN pip install --no-cache-dir pandas
 
 COPY ./server /usr/src
 
