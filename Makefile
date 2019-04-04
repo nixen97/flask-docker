@@ -11,3 +11,6 @@ build: clean
 
 clean:
 	docker-compose rm -f
+	
+kill:
+	docker-compose down
